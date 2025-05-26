@@ -5,6 +5,7 @@ import plotly.express as px
 
 warnings.filterwarnings("ignore")
 
+
 st.set_page_config(page_title="KPI Dashboard", page_icon="📊", layout="wide")
 
 # Adjust the title size and align it to the left
@@ -85,7 +86,7 @@ fig = px.bar(category_combined_df, x="Division Name", y=["Call Days_Total", "Cal
 # Update traces for better visibility
 fig.update_traces(
     texttemplate="<b>%{y:.0f}</b>",  # Bold labels without commas
-    textfont=dict(size=24, color="black",weight="bold"), width=0.3  # Adjust bar width
+    textfont=dict(size=16, color="black",weight="bold"), width=0.3  # Adjust bar width
 )
 # Update layout to improve legend placement
 fig.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5))
@@ -102,7 +103,7 @@ fig = px.bar(doctor_avg_df, x="Division Name", y="Doctor Call Avg", title="Docto
              color_discrete_sequence=["green"], text=doctor_avg_df["Doctor Call Avg"].map("{:.2f}".format),height= 470,width=100)
 fig.update_traces(
     texttemplate="<b>%{y:.0f}</b>",  # Bold labels without commas
-    textfont=dict(size=24, color="black",weight="bold"),width= 0.3)  # Bigger font for readability
+    textfont=dict(size=16, color="black",weight="bold"),width= 0.3)  # Bigger font for readability
 
 fig.update_layout(legend=dict(orientation="h",yanchor="top",y=-0.2,xanchor="center",x=0.5)
 )
@@ -126,7 +127,7 @@ fig = px.bar(plan_actual_df, x="Division Name", y=["Plan DR Calls", "Actual DR C
 # Update traces to position text inside the bars
 fig.update_traces(
     texttemplate="<b>%{y:.0f}</b>",  # Bold labels without commas
-    textfont=dict(size=24, color="black",weight="bold"),width= 0.3  # Bigger font for readability
+    textfont=dict(size=16, color="black",weight="bold"),width= 0.3  # Bigger font for readability
 )
 fig.update_layout(legend=dict(orientation="h",yanchor="top",y=-0.2,xanchor="center",x=0.5)
 )
@@ -147,7 +148,7 @@ fig = px.bar(pc_freq_df, x="Division Name", y="2PC Freq Cov %", title="2PC Freq 
              color="2PC Freq Cov %", text="2PC Freq Cov %", height= 520 )
 fig.update_traces(
     texttemplate="<b>%{y:.0f}</b>",  # Bold labels without commas
-    textfont=dict(size=24, color="black",weight="bold"),width= 0.5  # Bigger font for readability
+    textfont=dict(size=16, color="black",weight="bold"),width= 0.5  # Bigger font for readability
 )
 fig.update_layout(legend=dict(orientation="h",yanchor="top",y=-0.2,xanchor="center",x=0.5)
 )
@@ -163,7 +164,7 @@ fig = px.bar(total_dr_cov_df, x="Division Name", y="Total DR Cov %",
              title="Total DR Coverage % by Division", color="Total DR Cov %", text="Total DR Cov %", height=500)
 fig.update_traces(
     texttemplate="<b>%{y:.0f}</b>",  # Bold labels without commas
-    textfont=dict(size=24, color="black",weight="bold"),width= 0.3  # Bigger font for readability
+    textfont=dict(size=16, color="black",weight="bold"),width= 0.3  # Bigger font for readability
 )
 
 
@@ -226,7 +227,7 @@ fig = px.bar(metrics_df, x="Division Name",
 # Show data labels without commas
 fig.update_traces(
     texttemplate="<b>%{y:.0f}</b>",  # Bold labels without commas
-    textfont=dict(size=24, color="black",weight="bold"),width= 0.2  # Bigger font for readability
+    textfont=dict(size=18, color="black",weight="bold"),width= 0.2  # Bigger font for readability
 )
 fig.update_layout(legend=dict(orientation="h",yanchor="top",y=-0.2,xanchor="center",x=0.5)
 )
@@ -263,8 +264,8 @@ fig = px.line(summary_table, x="Zone", y=["Plan DR Calls", "Actual DR Calls"],
 # Update layout for better visibility
 fig.update_layout(
     title=dict(
-        text="Call and Doctor Visit Trends by Zone",
-        font=dict(size=20, color="black", family="Arial", weight="bold")  # Bold title
+        text="Calls Trends by Zone",
+        font=dict(size=18, color="black", family="Arial", weight="bold")  # Bold title
     ),
     xaxis_title="Zone",
     yaxis_title="Count",
@@ -296,15 +297,15 @@ fig = px.pie(df_pie, names="Category", values="Value",
              hole=0.4, color="Category",
              color_discrete_map={"Total DR Total": "blue", "Total DR Visited": "green", "Total DR MIssed": "red"})
 
-fig.update_traces(textinfo="label+value+percent", textfont=dict(size=18, color="black"))
+fig.update_traces(textinfo="label+value+percent", textfont=dict(size=18, color="yellow"))
 
 # Update layout for better readability
 fig.update_layout(
-    height= 400,  # Reduce height
-    width= 400,   # Reduce width
+    height= 600,  # Reduce height
+    width= 600,   # Reduce width
     title=dict(
         text="Doctor Visit Distribution",
-        font=dict(size=22, color="black", family="Arial", weight="bold")  # Slightly smaller bold title
+        font=dict(size=18, color="black", family="Arial", weight="bold")  # Slightly smaller bold title
     ),
     legend_title="Visit Status"
 )
