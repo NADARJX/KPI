@@ -300,8 +300,8 @@ fig.update_traces(textinfo="label+value+percent", textfont=dict(size=18, color="
 
 # Update layout for better readability
 fig.update_layout(
-    height= 600,  # Reduce height
-    width= 600,   # Reduce width
+    height= 400,  # Reduce height
+    width= 400,   # Reduce width
     title=dict(
         text="Doctor Visit Distribution",
         font=dict(size=22, color="black", family="Arial", weight="bold")  # Slightly smaller bold title
