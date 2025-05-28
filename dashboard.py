@@ -305,7 +305,7 @@ fig.update_layout(
     width= 600,   # Reduce width
     title=dict(
         text="Doctor Visit Distribution",
-        font=dict(size=16, color="black", family="Arial", weight="bold")  # Slightly smaller bold title
+        font=dict(size=18, color="black", family="Arial", weight="bold")  # Slightly smaller bold title
     ),
     legend_title="Visit Status"
 )
