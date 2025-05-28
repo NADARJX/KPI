@@ -4,21 +4,27 @@ import warnings
 import plotly.express as px
 
 warnings.filterwarnings("ignore")
-#####
+
 st.set_page_config(page_title="KPI Dashboard", page_icon="📊", layout="wide")
 
 # Adjust the title size and align it to the left
 st.markdown("<h1 style='text-align: left; font-size: 36px;'>📊 KPI Dashboard</h1>", unsafe_allow_html=True)
 
-        
 # File uploader
 fl = st.file_uploader("📂 Upload a file", type=["csv", "txt", "xlsx", "xls"])
 
 if fl is not None:
     df = pd.read_csv(fl)
 else:
-    file_path = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20May%202025.csv"
-    df = pd.read_csv(file_path)
+    # Use the RAW GitHub URL instead
+    file_path = "https://raw.githubusercontent.com/NADARJX/KPI/main/KPI%20new-%20May%202025.csv"
+
+    try:
+        df = pd.read_csv(file_path, encoding="utf-8")
+    except pd.errors.ParserError:
+        st.error("❌ CSV parsing error! Please check file format or encoding.")
+    except Exception as e:
+        st.error(f"Unexpected error: {e}")
 
 # Convert column to datetime format
 df["Last Submitted DCR Date"] = pd.to_datetime(df["Last Submitted DCR Date"], errors='coerce', dayfirst=True)
