@@ -17,7 +17,7 @@ fl = st.file_uploader("📂 Upload a file", type=["csv", "txt", "xlsx", "xls"])
 if fl is not None:
     df = pd.read_csv(fl)
 else:
-    file_path = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\New folder\KPI new- May 2025.csv"
+    file_path = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20May%202025.csv"
     df = pd.read_csv(file_path)
 
 # Convert column to datetime format
