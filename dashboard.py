@@ -4,20 +4,20 @@ import warnings
 import plotly.express as px
 
 warnings.filterwarnings("ignore")
-
-
+#####
 st.set_page_config(page_title="KPI Dashboard", page_icon="📊", layout="wide")
 
 # Adjust the title size and align it to the left
 st.markdown("<h1 style='text-align: left; font-size: 36px;'>📊 KPI Dashboard</h1>", unsafe_allow_html=True)
 
+        
 # File uploader
 fl = st.file_uploader("📂 Upload a file", type=["csv", "txt", "xlsx", "xls"])
 
 if fl is not None:
     df = pd.read_csv(fl)
 else:
-    file_path = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20May%202025.csv"
+    file_path = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\New folder\KPI new- May 2025.csv"
     df = pd.read_csv(file_path)
 
 # Convert column to datetime format
@@ -28,7 +28,7 @@ df = df.dropna(subset=["Last Submitted DCR Date"])
 st.sidebar.header("Choose your filters")
 df_filtered = df.copy()
 
-filters = ["Division Name", "Territory Headquarter", "Territory", "Zone", "ABM", "ZBM", "NSM"]
+filters = ["Territory Headquarter", "Territory", "Zone", "ABM", "ZBM", "NSM"]
 selected_filters = {}
 
 # **User selects a division for data filtering**
@@ -43,22 +43,43 @@ for filter_col in filters:
     if selected_values:
         df_filtered = df_filtered[df_filtered[filter_col].isin(selected_values)]
         selected_filters[filter_col] = selected_values
+        
+########
+
+# Ensure numeric columns are properly converted, replacing errors with NaN
+numeric_columns = [
+    "Call Days", "Doctor Call Avg", "Plan DR Calls", "Actual DR Calls",
+    "2PC Freq Cov %", "Total DR Cov %", "Leaves"
+]
+df_filtered[numeric_columns] = df_filtered[numeric_columns].apply(pd.to_numeric, errors="coerce")
+
+# Replace NaN values with 0 to ensure correct summation
+df_filtered.fillna(0, inplace=True)
+
+# Convert integer-based values to correct data types (keeping floats where necessary)
+df_filtered = df_filtered.astype({
+    "Call Days": "float64",
+    "Doctor Call Avg": "float64",
+    "Plan DR Calls": "int64",
+    "Actual DR Calls": "int64",
+    "2PC Freq Cov %": "float64",
+    "Total DR Cov %": "float64",
+    "Leaves": "int64"
+})
 
 # Aggregated data for charts
-category_df = df_filtered.groupby("Division Name", as_index=False)["Call Days"].sum()
-doctor_avg_df = df_filtered.groupby("Division Name", as_index=False)["Doctor Call Avg"].mean()
-doctor_avg_df["Doctor Call Avg"] = doctor_avg_df["Doctor Call Avg"].round(2)
+category_df = df_filtered.groupby("Division Name", as_index=False)["Call Days"].sum().round(2)
+doctor_avg_df = df_filtered.groupby("Division Name", as_index=False)["Doctor Call Avg"].mean().round(2)
 
-plan_actual_df = df_filtered.groupby("Division Name", as_index=False)[["Plan DR Calls", "Actual DR Calls"]].sum()
-plan_actual_df = plan_actual_df.round(2)
+plan_actual_df = df_filtered.groupby("Division Name", as_index=False)[["Plan DR Calls", "Actual DR Calls"]].sum().round(2)
 
-pc_freq_df = df_filtered.groupby("Division Name", as_index=False)["2PC Freq Cov %"].mean()
-pc_freq_df["2PC Freq Cov %"] = pc_freq_df["2PC Freq Cov %"].round(2)
-
-total_dr_cov_df = df_filtered.groupby("Division Name", as_index=False)["Total DR Cov %"].mean()
-total_dr_cov_df["Total DR Cov %"] = total_dr_cov_df["Total DR Cov %"].round(2)
+pc_freq_df = df_filtered.groupby("Division Name", as_index=False)["2PC Freq Cov %"].mean().round(2)
+total_dr_cov_df = df_filtered.groupby("Division Name", as_index=False)["Total DR Cov %"].mean().round(2)
 
 leaves_df = df_filtered.groupby("Division Name", as_index=False)["Leaves"].sum()
+
+
+
 
 # **Bar Chart for Call Days with Average**
 st.subheader("Division-wise Call Days/Avg and Avg Call")
@@ -297,7 +318,7 @@ fig = px.pie(df_pie, names="Category", values="Value",
              hole=0.4, color="Category",
              color_discrete_map={"Total DR Total": "blue", "Total DR Visited": "green", "Total DR MIssed": "red"})
 
-fig.update_traces(textinfo="label+value+percent", textfont=dict(size=18, color="yellow"))
+fig.update_traces(textinfo="label+value+percent", textfont=dict(size=14, color="yellow"))
 
 # Update layout for better readability
 fig.update_layout(
@@ -305,7 +326,7 @@ fig.update_layout(
     width= 600,   # Reduce width
     title=dict(
         text="Doctor Visit Distribution",
-        font=dict(size=14, color="black", family="Arial", weight="bold")  # Slightly smaller bold title
+        font=dict(size=18, color="black", family="Arial", weight="bold")  # Slightly smaller bold title
     ),
     legend_title="Visit Status"
 )
