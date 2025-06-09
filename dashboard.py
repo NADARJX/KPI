@@ -17,7 +17,7 @@ if fl is not None:
     df = pd.read_csv(fl)
 else:
     # Use the RAW GitHub URL instead
-    file_path = "https://raw.githubusercontent.com/NADARJX/KPI/main/KPI%20new-%20May%202025.csv"
+    file_path = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20May%202025.xlsx"
 
     try:
         df = pd.read_csv(file_path, encoding="utf-8")
