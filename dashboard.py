@@ -2,104 +2,185 @@ import streamlit as st
 import pandas as pd
 import warnings
 import plotly.express as px
+import plotly.graph_objects as go
 
 warnings.filterwarnings("ignore")
-
 st.set_page_config(page_title="KPI Dashboard", page_icon="📊", layout="wide")
 
-# Adjust the title size and align it to the left
+# -------------------- USER AUTHENTICATION --------------------
+user_roles = {
+    "APCMAY": {"division": "Osvita", "email": "venkateshbabu.pr@abbott.com"},
+    "APCMAY1": {"division": "Endura", "email": "arijit.gupta@abbott.com"},
+    "APCMAY2": {"division": "General Medicine", "email": "basheer.ahmed@abbott.com"},
+    "APCMAY3": {"division": "Multi Therapy", "email": "nayan.borthakhur@abbott.com"},
+    "APCMAY4": {"division": "NovaNXT", "email": "kailash.parihar@abbott.com"}
+}
+
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+    st.session_state.username = None
+    st.session_state.user_division = None
+
+if not st.session_state.authenticated:
+    st.title("🔐 Login Page")
+    username = st.text_input("Enter your username:")
+    email = st.text_input("Enter your email:")
+
+    if username in user_roles and user_roles[username]["email"] == email:
+        st.session_state.authenticated = True
+        st.session_state.username = username
+        st.session_state.user_division = user_roles[username]["division"]
+        st.success(f"Welcome {username}! You are authenticated under {st.session_state.user_division} division.")
+    else:
+        st.error("Access denied. Contact admin for access.")
+        st.stop()
+
+# -------------------- DASHBOARD HEADER --------------------
 st.markdown("<h1 style='text-align: left; font-size: 36px;'>📊 KPI Dashboard</h1>", unsafe_allow_html=True)
 
-# File uploader
+# -------------------- FILE UPLOAD OR GITHUB LOAD --------------------
 fl = st.file_uploader("📂 Upload a file", type=["csv", "txt", "xlsx", "xls"])
 
-if fl is not None:
-    df = pd.read_csv(fl)
-else:
-    # Use the RAW GitHub URL instead
-    file_path = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20May%202025.xlsx"
-
+@st.cache_data(ttl=60)  # Refresh every 60 seconds
+def load_data_from_github():
+    file_url = "https://raw.githubusercontent.com/NADARJX/KPI/main/KPI%20new-%20May%202025.xlsx"
     try:
-        df = pd.read_csv(file_path, encoding="utf-8")
-    except pd.errors.ParserError:
-        st.error("❌ CSV parsing error! Please check file format or encoding.")
+        return pd.read_excel(file_url)
     except Exception as e:
-        st.error(f"Unexpected error: {e}")
+        st.error(f"❌ Failed to load data from GitHub: {e}")
+        return None
 
-# Convert column to datetime format
+# Load data
+if fl is not None:
+    try:
+        if fl.name.endswith((".csv", ".txt")):
+            df = pd.read_csv(fl)
+        else:
+            df = pd.read_excel(fl)
+    except Exception as e:
+        st.error(f"❌ Error reading uploaded file: {e}")
+        df = None
+else:
+    df = load_data_from_github()
+
+# -------------------- DISPLAY DATA --------------------
+if df is not None:
+    st.dataframe(df)
+
+# Convert Last Submitted DCR Date to datetime format
 df["Last Submitted DCR Date"] = pd.to_datetime(df["Last Submitted DCR Date"], errors='coerce', dayfirst=True)
 df = df.dropna(subset=["Last Submitted DCR Date"])
 
-# Sidebar filters dynamically
+# Apply RLS - Filter data based on authenticated user's division
+df_filtered = df[df["Division Name"] == st.session_state.user_division]
+
+# Sidebar Filters - Consolidated selection options
 st.sidebar.header("Choose your filters")
-df_filtered = df.copy()
 
-filters = ["Territory Headquarter", "Territory", "Zone", "ABM", "ZBM", "NSM"]
-selected_filters = {}
 
-# **User selects a division for data filtering**
-selected_division = st.sidebar.selectbox("Select Division", df["Division Name"].unique())
+# Date filter with "All" option
+selected_date = st.sidebar.selectbox("Select DCR Submission Date", ["All"] + list(df_filtered["Last Submitted DCR Date"].dropna().unique()))
 
-# **Filter data based on the selected division**
-df_filtered = df[df["Division Name"] == selected_division]
+# Apply filtering only if a specific date is selected
+if selected_date != "All":
+    df_filtered = df_filtered[df_filtered["Last Submitted DCR Date"] == pd.to_datetime(selected_date)]
 
-for filter_col in filters:
-    unique_values = df_filtered[filter_col].dropna().unique()
-    selected_values = st.sidebar.multiselect(f"Pick your {filter_col}", unique_values)
-    if selected_values:
-        df_filtered = df_filtered[df_filtered[filter_col].isin(selected_values)]
-        selected_filters[filter_col] = selected_values
-        
-########
+# Abbott Designation filter
+selected_designation = st.sidebar.selectbox("Select Abbott Designation", ["All"] + list(df_filtered["Abbott Designation"].dropna().unique()))
+if selected_designation != "All":
+    df_filtered = df_filtered[df_filtered["Abbott Designation"] == selected_designation]
 
-# Ensure numeric columns are properly converted, replacing errors with NaN
-numeric_columns = [
-    "Call Days", "Doctor Call Avg", "Plan DR Calls", "Actual DR Calls",
-    "2PC Freq Cov %", "Total DR Cov %", "Leaves"
-]
-df_filtered[numeric_columns] = df_filtered[numeric_columns].apply(pd.to_numeric, errors="coerce")
+# ABM filter (Always Available)
+abm_options = df_filtered["ABM"].dropna().unique()
+selected_abm = st.sidebar.multiselect("Select ABM", abm_options)
+if selected_abm:
+    df_filtered = df_filtered[df_filtered["ABM"].isin(selected_abm)]
 
-# Replace NaN values with 0 to ensure correct summation
-df_filtered.fillna(0, inplace=True)
+# Zone filter
+zone_options = df_filtered["Zone"].dropna().unique()
+selected_zone = st.sidebar.multiselect("Select Zone", zone_options)
+if selected_zone:
+    df_filtered = df_filtered[df_filtered["Zone"].isin(selected_zone)]
 
-# Convert integer-based values to correct data types (keeping floats where necessary)
-df_filtered = df_filtered.astype({
-    "Call Days": "float64",
-    "Doctor Call Avg": "float64",
-    "Plan DR Calls": "int64",
-    "Actual DR Calls": "int64",
-    "2PC Freq Cov %": "float64",
-    "Total DR Cov %": "float64",
-    "Leaves": "int64"
-})
+# NSM filter
+nsm_options = df_filtered["NSM"].dropna().unique()
+selected_nsm = st.sidebar.multiselect("Select NSM", nsm_options)
+if selected_nsm:
+    df_filtered = df_filtered[df_filtered["NSM"].isin(selected_nsm)]
 
+# ZBM filter
+zbm_options = df_filtered["ZBM"].dropna().unique()
+selected_zbm = st.sidebar.multiselect("Select ZBM", zbm_options)
+if selected_zbm:
+    df_filtered = df_filtered[df_filtered["ZBM"].isin(selected_zbm)]
+
+# Territory filter (TBM)
+territory_options = df_filtered["Territory"].dropna().unique()
+selected_territory = st.sidebar.multiselect("Select Territory", territory_options)
+if selected_territory:
+    df_filtered = df_filtered[df_filtered["Territory"].isin(selected_territory)]
+
+# Find latest submission date based on Territory selection
+latest_date = "NA"
+if selected_territory and not df_filtered.empty:
+    latest_date = df_filtered["Last Submitted DCR Date"].max().strftime("%d-%b-%Y")
+
+# Display **only one** dynamic heading with latest DCR submission date
+st.markdown(
+    f"<h1 style='text-align: left; font-size: 38px;'>📊 KPI Dashboard - {st.session_state.user_division} (Last Updated: {latest_date})</h1>",
+    unsafe_allow_html=True
+)
+
+# KPI CARD: Display number of users who submitted DCR for selected date
+num_dcr_users = df_filtered["Territory"].nunique() if selected_date else 0
+st.markdown(
+    f"""
+    <div style='border: 4px solid #003366; padding: 10px; width: 300px; margin: auto; text-align: center; background-color: #007BFF; border-radius: 8px;'>
+        <p style='font-size: 40px; font-weight: bold; color: white;'>{num_dcr_users}</p>
+        <h2 style='color: white; font-weight: bold; font-size: 18px;'>No of DCR Updated Users (Filtered by Date)</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# Display ABM KPI Score **only if an ABM is selected**
+if selected_abm:
+    st.subheader("📌 Individual ABM KPI Scores")
+    st.dataframe(df_filtered[["ABM", "Call Days", "Doctor Call Avg", "Plan DR Calls", "Actual DR Calls", "Total DR Cov %"]])
+    
+
+
+
+
+
+###############################################
 # Aggregated data for charts
-category_df = df_filtered.groupby("Division Name", as_index=False)["Call Days"].sum().round(2)
-doctor_avg_df = df_filtered.groupby("Division Name", as_index=False)["Doctor Call Avg"].mean().round(2)
+category_df = df_filtered.groupby("Division Name", as_index=False)["Call Days"].sum().round(0)
+doctor_avg_df = df_filtered.groupby("Division Name", as_index=False)["Doctor Call Avg"].mean().round(0)
 
-plan_actual_df = df_filtered.groupby("Division Name", as_index=False)[["Plan DR Calls", "Actual DR Calls"]].sum().round(2)
+plan_actual_df = df_filtered.groupby("Division Name", as_index=False)[["Plan DR Calls", "Actual DR Calls"]].sum().round(0)
 
-pc_freq_df = df_filtered.groupby("Division Name", as_index=False)["2PC Freq Cov %"].mean().round(2)
-total_dr_cov_df = df_filtered.groupby("Division Name", as_index=False)["Total DR Cov %"].mean().round(2)
+pc_freq_df = df_filtered.groupby("Division Name", as_index=False)["2PC Freq Cov %"].mean().round(0)
+total_dr_cov_df = df_filtered.groupby("Division Name", as_index=False)["Total DR Cov %"].mean().round(0)
 
-leaves_df = df_filtered.groupby("Division Name", as_index=False)["Leaves"].sum()
-
-
+leaves_df = df_filtered.groupby("Division Name", as_index=False)["Leaves"].sum().round(0)
 
 
+
+###########
 # **Bar Chart for Call Days with Average**
 st.subheader("Division-wise Call Days/Avg and Avg Call")
 
 # Calculate the average Call Days
-category_avg_df = df_filtered.groupby("Division Name", as_index=False)["Call Days"].mean()
-category_avg_df["Call Days"] = category_avg_df["Call Days"].round(2)  # Round for better readability
+category_avg_df = df_filtered.groupby("Division Name", as_index=False)["Call Days"].mean().round(0)
+category_avg_df["Call Days"] = category_avg_df["Call Days"].round(0)  # Round for better readability
 
 # Merge total and average data
 category_combined_df = category_df.merge(category_avg_df, on="Division Name", suffixes=("_Total", "_Avg"))
 
 # Ensure Call Days are integers without formatting
 category_combined_df["Call Days_Total"] = category_combined_df["Call Days_Total"].astype(int)
-category_combined_df["Call Days_Avg"] = category_combined_df["Call Days_Avg"].round(2)  
+category_combined_df["Call Days_Avg"] = category_combined_df["Call Days_Avg"].round(0)  
 
 # Create a Streamlit column layout
 col1, col2 = st.columns(2)
@@ -208,10 +289,10 @@ with col5:
 df_filtered["Call Days"] = df_filtered["Call Days"].fillna(0).astype(int)
 df_filtered["Plan DR Calls"] = df_filtered["Plan DR Calls"].fillna(0).astype(int)
 df_filtered["Actual DR Calls"] = df_filtered["Actual DR Calls"].fillna(0).astype(int)
-df_filtered["Doctor Call Avg"] = df_filtered["Doctor Call Avg"].fillna(0).round(2)
-df_filtered["2PC Freq Cov %"] = df_filtered["2PC Freq Cov %"].fillna(0).round(2)
-df_filtered["Total DR Cov %"] = df_filtered["Total DR Cov %"].fillna(0).round(2)
-df_filtered["Non Field Work"] = df_filtered["Non Field Work"].fillna(0).round(2)
+df_filtered["Doctor Call Avg"] = df_filtered["Doctor Call Avg"].fillna(0).round(0)
+df_filtered["2PC Freq Cov %"] = df_filtered["2PC Freq Cov %"].fillna(0).round(0)
+df_filtered["Total DR Cov %"] = df_filtered["Total DR Cov %"].fillna(0).round(0)
+df_filtered["Non Field Work"] = df_filtered["Non Field Work"].fillna(0).round(0)
 
 # Adding Total Days, Field Work, and Leaves columns
 df_filtered["Total Days"] = df_filtered["Total Days"].fillna(0).astype(int)
@@ -234,10 +315,10 @@ metrics_df = df_filtered.groupby("Division Name", as_index=False).agg({
 })
 
 # Round mean values for better readability
-metrics_df["Doctor Call Avg"] = metrics_df["Doctor Call Avg"].round(2)
-metrics_df["2PC Freq Cov %"] = metrics_df["2PC Freq Cov %"].round(2)
-metrics_df["Total DR Cov %"] = metrics_df["Total DR Cov %"].round(2)
-metrics_df["Non Field Work"] = metrics_df["Non Field Work"].round(2)
+metrics_df["Doctor Call Avg"] = metrics_df["Doctor Call Avg"].round(0)
+metrics_df["2PC Freq Cov %"] = metrics_df["2PC Freq Cov %"].round(0)
+metrics_df["Total DR Cov %"] = metrics_df["Total DR Cov %"].round(0)
+metrics_df["Non Field Work"] = metrics_df["Non Field Work"].round(0)
 
 
 # Create a bar chart for all KPI
@@ -268,10 +349,10 @@ with col6:
 df_filtered["Call Days"] = df_filtered["Call Days"].fillna(0).astype(int)
 df_filtered["Plan DR Calls"] = df_filtered["Plan DR Calls"].fillna(0).astype(int)
 df_filtered["Actual DR Calls"] = df_filtered["Actual DR Calls"].fillna(0).astype(int)
-df_filtered["Doctor Call Avg"] = df_filtered["Doctor Call Avg"].fillna(0).round(2)
-df_filtered["2PC Freq Cov %"] = df_filtered["2PC Freq Cov %"].fillna(0).round(2)
-df_filtered["Total DR Cov %"] = df_filtered["Total DR Cov %"].fillna(0).round(2)
-df_filtered["Total Days"] = df_filtered["Total Days"].fillna(0).round(2)
+df_filtered["Doctor Call Avg"] = df_filtered["Doctor Call Avg"].fillna(0).round(0)
+df_filtered["2PC Freq Cov %"] = df_filtered["2PC Freq Cov %"].fillna(0).round(0)
+df_filtered["Total DR Cov %"] = df_filtered["Total DR Cov %"].fillna(0).round(0)
+df_filtered["Total Days"] = df_filtered["Total Days"].fillna(0).round(0)
 
 # Group data by Zone
 summary_table = df_filtered.groupby("Zone", as_index=False).agg({
@@ -314,6 +395,48 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+
+# Ensure numeric conversion
+df_filtered["1PC Freq Cov %"] = pd.to_numeric(df_filtered["1PC Freq Cov %"], errors="coerce")
+df_filtered["2PC Freq Cov %"] = pd.to_numeric(df_filtered["2PC Freq Cov %"], errors="coerce")
+
+# Group by Division to calculate averages
+division_data = df_filtered.groupby("Division Name", as_index=False)[["1PC Freq Cov %", "2PC Freq Cov %"]].mean().round(2)
+
+
+
+for index, row in division_data.iterrows():
+    division_name = row["Division Name"]
+    avg_1pc = row["1PC Freq Cov %"]
+    avg_2pc = row["2PC Freq Cov %"]
+
+    # Gauge Chart for 1PC Coverage %
+    fig1 = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=avg_1pc,
+        title={"text": f"{division_name} - 1PC Coverage %"},
+        gauge={"axis": {"range": [0, 100]}, "bar": {"color": "blue"}}
+    ))
+
+    # Gauge Chart for 2PC Coverage %
+    fig2 = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=avg_2pc,
+        title={"text": f"{division_name} - 2PC Coverage %"},
+        gauge={"axis": {"range": [0, 100]}, "bar": {"color": "green"}}
+    ))
+
+  
+
+    # Display both charts side by side in Streamlit
+    st.subheader(f"📊 Coverage Metrics for {', '.join(selected_territory)}")
+    col7, col8 = st.columns(2)
+    with col7:
+        st.plotly_chart(fig1)
+    with col8:
+        st.plotly_chart(fig2)
+##############
 # Prepare data for visualization
 df_pie = df_filtered[["Division Name", "Total DR Total", "Total DR Visited", "Total DR MIssed"]].melt(id_vars=["Division Name"], 
                                 var_name="Category", value_name="Value")
@@ -338,6 +461,23 @@ fig.update_layout(
 )
 
 # Display in Streamlit
+st.plotly_chart(fig, use_container_width=True)
+
+# Plotly Visualization: Number of DCR Updates by Territory
+fig = px.bar(
+    df_filtered,
+    x="Territory",
+    y="Actual DR Calls",
+    color="Zone",
+    title=f"Actual Doctor Calls per Territory - {st.session_state.user_division}",
+    labels={"Actual DR Calls": "Doctor Calls", "Territory": "Territory Name"},
+    template="plotly_white"
+)
+
+
+# Add data labels
+fig.update_traces(texttemplate='%{y}', textposition='outside')
+
 st.plotly_chart(fig, use_container_width=True)
 
 # **Download Option**
