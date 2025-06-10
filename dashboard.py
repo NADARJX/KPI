@@ -63,9 +63,6 @@ if fl is not None:
 else:
     df = load_data_from_github()
 
-# -------------------- DISPLAY DATA --------------------
-if df is not None:
-    st.dataframe(df)
 
 # Convert Last Submitted DCR Date to datetime format
 df["Last Submitted DCR Date"] = pd.to_datetime(df["Last Submitted DCR Date"], errors='coerce', dayfirst=True)
