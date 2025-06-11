@@ -45,8 +45,13 @@ if not st.session_state.authenticated:
 # Load data
 ###file_path = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\New folder\KPI new- May 2025.xlsx"
 ###df = pd.read_excel(file_path)
-url = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20May%202025.xlsx"
+
+# Use the raw GitHub URL
+url = "https://raw.githubusercontent.com/NADARJX/KPI/main/KPI%20new-%20May%202025.xlsx"
+
+# Read the Excel file
 df = pd.read_excel(url)
+
 
 ##########
 fl = st.file_uploader("📂 Upload a file", type=["csv", "txt", "xlsx", "xls"])
