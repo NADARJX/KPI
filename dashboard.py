@@ -91,10 +91,22 @@ df_filtered = df[df["Division Name"] == st.session_state.user_division]
 st.sidebar.header("Choose your filters")
 
 
+st.write("Available columns:", df_filtered.columns.tolist())
 
-# Sidebar filter for DCR Month
-selected_month = st.sidebar.selectbox("Select DCR Month",["All"] + sorted(df_filtered["DCR Month"].dropna().unique())
+
+# Example: if the actual column is "DCR_Month"
+selected_month = st.sidebar.selectbox(
+    "Select DCR Month",
+    ["All"] + sorted(df_filtered["DCR_Month"].dropna().unique())
 )
+if "DCR Month" in df_filtered.columns:
+    selected_month = st.sidebar.selectbox(
+        "Select DCR Month",
+        ["All"] + sorted(df_filtered["DCR Month"].dropna().unique())
+    )
+else:
+    st.error("❌ 'DCR Month' column not found in the data.")
+
 
 # Apply filter
 if selected_month != "All":df_filtered = df_filtered[df_filtered["DCR Month"] == selected_month]
