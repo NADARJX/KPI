@@ -1,13 +1,18 @@
 import streamlit as st
 import pandas as pd
 import warnings
-import plotly.express as px
+import plotly.express as px  # Added Plotly for interactive charts
 import plotly.graph_objects as go
 
+from datetime import date, timedelta
+
+import datetime
+
+
 warnings.filterwarnings("ignore")
+st.set_page_config(page_title="KPI Dashboard", page_icon="📊", layout="wide")
 
-
-# -------------------- USER AUTHENTICATION --------------------
+# Simulated user authentication system with username, division & email
 user_roles = {
     "APCMAY": {"division": "Osvita", "email": "venkateshbabu.pr@abbott.com"},
     "APCMAY1": {"division": "Endura", "email": "arijit.gupta@abbott.com"},
@@ -16,11 +21,13 @@ user_roles = {
     "APCMAY4": {"division": "NovaNXT", "email": "kailash.parihar@abbott.com"}
 }
 
+# Create session state for authentication
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
     st.session_state.username = None
     st.session_state.user_division = None
 
+# Login section
 if not st.session_state.authenticated:
     st.title("🔐 Login Page")
     username = st.text_input("Enter your username:")
@@ -33,12 +40,15 @@ if not st.session_state.authenticated:
         st.success(f"Welcome {username}! You are authenticated under {st.session_state.user_division} division.")
     else:
         st.error("Access denied. Contact admin for access.")
-        st.stop()
+        st.stop()  # Prevents further execution
 
-# -------------------- DASHBOARD HEADER --------------------
-st.markdown("<h1 style='text-align: left; font-size: 36px;'>📊 KPI Dashboard</h1>", unsafe_allow_html=True)
+# Load data
+###file_path = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\New folder\KPI new- May 2025.xlsx"
+###df = pd.read_excel(file_path)
+url = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20May%202025.xlsx"
+df = pd.read_excel(url)
 
-# -------------------- FILE UPLOAD OR GITHUB LOAD --------------------
+##########
 fl = st.file_uploader("📂 Upload a file", type=["csv", "txt", "xlsx", "xls"])
 
 @st.cache_data(ttl=60)  # Refresh every 60 seconds
@@ -62,6 +72,7 @@ if fl is not None:
         df = None
 else:
     df = load_data_from_github()
+#################
 
 
 # Convert Last Submitted DCR Date to datetime format
@@ -75,12 +86,16 @@ df_filtered = df[df["Division Name"] == st.session_state.user_division]
 st.sidebar.header("Choose your filters")
 
 
-# Date filter with "All" option
-selected_date = st.sidebar.selectbox("Select DCR Submission Date", ["All"] + list(df_filtered["Last Submitted DCR Date"].dropna().unique()))
 
-# Apply filtering only if a specific date is selected
-if selected_date != "All":
-    df_filtered = df_filtered[df_filtered["Last Submitted DCR Date"] == pd.to_datetime(selected_date)]
+# Sidebar filter for DCR Month
+selected_month = st.sidebar.selectbox("Select DCR Month",["All"] + sorted(df_filtered["DCR Month"].dropna().unique())
+)
+
+# Apply filter
+if selected_month != "All":df_filtered = df_filtered[df_filtered["DCR Month"] == selected_month]
+
+
+
 
 # Abbott Designation filter
 selected_designation = st.sidebar.selectbox("Select Abbott Designation", ["All"] + list(df_filtered["Abbott Designation"].dropna().unique()))
@@ -127,6 +142,12 @@ st.markdown(
     f"<h1 style='text-align: left; font-size: 38px;'>📊 KPI Dashboard - {st.session_state.user_division} (Last Updated: {latest_date})</h1>",
     unsafe_allow_html=True
 )
+
+# Ensure the date column is in datetime format
+df["Last Submitted DCR Date"] = pd.to_datetime(df["Last Submitted DCR Date"])
+
+# Date input from user
+selected_date = st.date_input("Select a date", datetime.date.today())
 
 # KPI CARD: Display number of users who submitted DCR for selected date
 num_dcr_users = df_filtered["Territory"].nunique() if selected_date else 0
