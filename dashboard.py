@@ -48,8 +48,9 @@ if not st.session_state.authenticated:
 # Load data
 ##file_path = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\New folder\KPI new- May 2025.xlsx"
 ##df = pd.read_excel(file_path)
-url = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20May%202025.xlsx"
+url = "https://raw.githubusercontent.com/username/repository/main/file.xlsx"
 df = pd.read_excel(url)
+
 
 ###df = pd.read_excel(url, engine='openpyxl')
 
