@@ -52,8 +52,12 @@ url = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20May%202025.xlsx"
 df = pd.read_excel(url)
 
 
-###df = pd.read_excel(url, engine='openpyxl')
-
+df = pd.read_excel(url, engine='openpyxl')
+import requests
+response = requests.get(url)
+with open("temp.xlsx", "wb") as f:
+    f.write(response.content)
+df = pd.read_excel("temp.xlsx")
 from io import BytesIO
 
 import requests
