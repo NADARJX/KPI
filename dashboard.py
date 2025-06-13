@@ -8,7 +8,6 @@ from datetime import date, timedelta
 
 import datetime
 
-
 warnings.filterwarnings("ignore")
 st.set_page_config(page_title="KPI Dashboard", page_icon="📊", layout="wide")
 
@@ -43,15 +42,15 @@ if not st.session_state.authenticated:
         st.stop()  # Prevents further execution
 
 # Load data
-###file_path = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\New folder\KPI new- May 2025.xlsx"
-###df = pd.read_excel(file_path)
-
 # Use the raw GitHub URL
-url = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20May%202025.csv"
+url = "https://raw.githubusercontent.com/NADARJX/KPI/main/KPI%20new-%20May%202025.csv"
 
-# Read the Excel file
-df = pd.read_csv(url)
-
+# Read the CSV file safely
+try:
+    df = pd.read_csv(url)
+except Exception as e:
+    st.error(f"❌ Error loading data: {e}")
+    df = None
 
 ##########
 fl = st.file_uploader("📂 Upload a file", type=["csv", "txt", "xlsx", "xls"])
@@ -79,33 +78,39 @@ else:
     df = load_data_from_github()
 #################
 
+# Ensure df is not None before processing
+if df is not None:
+    # Convert Last Submitted DCR Date to datetime format
+    df["Last Submitted DCR Date"] = pd.to_datetime(df["Last Submitted DCR Date"], errors='coerce', dayfirst=True)
+    df = df.dropna(subset=["Last Submitted DCR Date"])
 
-# Convert Last Submitted DCR Date to datetime format
-df["Last Submitted DCR Date"] = pd.to_datetime(df["Last Submitted DCR Date"], errors='coerce', dayfirst=True)
-df = df.dropna(subset=["Last Submitted DCR Date"])
+    # Apply RLS - Filter data based on authenticated user's division
+    df_filtered = df[df["Division Name"] == st.session_state.user_division]
 
-# Apply RLS - Filter data based on authenticated user's division
-df_filtered = df[df["Division Name"] == st.session_state.user_division]
+    # Sidebar Filters - Consolidated selection options
+    st.sidebar.header("Choose your filters")
 
-# Sidebar Filters - Consolidated selection options
-st.sidebar.header("Choose your filters")
+    # Display available columns for debugging
+    st.write("Available columns:", df_filtered.columns.tolist())
 
+    # Normalize column names to avoid issues
+    df_filtered.columns = df_filtered.columns.str.strip()
 
-st.write("Available columns:", df_filtered.columns.tolist())
+    # Select the DCR Month column dynamically
+    dcr_month_col = next((col for col in df_filtered.columns if "DCR Month" in col), None)
 
+    if dcr_month_col:
+        selected_month = st.sidebar.selectbox(
+            "Select DCR Month",
+            ["All"] + sorted(df_filtered[dcr_month_col].dropna().unique())
+        )
+    else:
+        st.error("❌ 'DCR Month' column not found in the data.")
 
-# Example: if the actual column is "DCR_Month"
-selected_month = st.sidebar.selectbox(
-    "Select DCR Month",
-    ["All"] + sorted(df_filtered["DCR_Month"].dropna().unique())
-)
-if "DCR Month" in df_filtered.columns:
-    selected_month = st.sidebar.selectbox(
-        "Select DCR Month",
-        ["All"] + sorted(df_filtered["DCR Month"].dropna().unique())
-    )
 else:
-    st.error("❌ 'DCR Month' column not found in the data.")
+    st.error("❌ No valid data available.")
+
+
 
 
 # Apply filter
