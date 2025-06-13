@@ -47,10 +47,10 @@ if not st.session_state.authenticated:
 ###df = pd.read_excel(file_path)
 
 # Use the raw GitHub URL
-url = "https://raw.githubusercontent.com/NADARJX/KPI/main/KPI%20new-%20May%202025.xlsx"
+url = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20May%202025.csv"
 
 # Read the Excel file
-df = pd.read_excel(url)
+df = pd.read_csv(url)
 
 
 ##########
