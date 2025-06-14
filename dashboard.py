@@ -50,10 +50,12 @@ if not st.session_state.authenticated:
 ##df = pd.read_excel(file_path)
 import requests
 
-url = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20Jun%202025.csv"
 
-# Read the CSV file directly from the URL
-df = pd.read_csv(url)
+url = "https://raw.githubusercontent.com/NADARJX/KPI/main/KPI%20new-%20Jun%202025.csv"
+
+# Try reading with encoding and error handling
+df = pd.read_csv(url, encoding='utf-8', error_bad_lines=False)
+
 
 
 
