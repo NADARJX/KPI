@@ -53,7 +53,7 @@ import requests
 url = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20Jun%202025.csv"
 
 # Read the CSV file directly from the URL
-df = pd.read_csv(url
+df = pd.read_csv(url)
 
 
 
