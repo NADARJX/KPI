@@ -50,7 +50,7 @@ if not st.session_state.authenticated:
 ##df = pd.read_excel(file_path)
 import requests
 
-url = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20May%202025.xlsx"
+url = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20Jun%202025.csv"
 response = requests.get(url)
 
 with open("temp.xlsx", "wb") as f:
