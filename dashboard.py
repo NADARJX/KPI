@@ -46,20 +46,16 @@ if not st.session_state.authenticated:
         st.stop()  # Prevents further execution
 
 # Load data
-##file_path = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\New folder\KPI new- May 2025.xlsx"
+##file_path = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\New folder\KPI new- Jun 2025.xlsx"
 ##df = pd.read_excel(file_path)
+url = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20May%202025.xlsx"
+df = pd.read_csv(url)
+
+###df = pd.read_excel(url, engine='openpyxl')
+
+from io import BytesIO
+
 import requests
-
-
-url = "https://raw.githubusercontent.com/NADARJX/KPI/main/KPI%20new-%20Jun%202025.csv"
-
-# Try reading with encoding and error handling
-df = pd.read_csv(url, encoding='utf-8', error_bad_lines=False)
-
-
-
-
-
 
 
 
@@ -292,7 +288,7 @@ df_filtered["Actual DR Calls"] = df_filtered["Actual DR Calls"].fillna(0).astype
 df_filtered["Doctor Call Avg"] = df_filtered["Doctor Call Avg"].fillna(0).round(0)
 df_filtered["2PC Freq Cov %"] = df_filtered["2PC Freq Cov %"].fillna(0).round(0)
 df_filtered["Total DR Cov %"] = df_filtered["Total DR Cov %"].fillna(0).round(0)
-df_filtered["Non Field Work"] = df_filtered["Non Field Work"].fillna(0).round(0)
+##df_filtered["Non Field Work"] = df_filtered["Non Field Work"].fillna(0).round(0)
 
 # Adding Total Days, Field Work, and Leaves columns
 df_filtered["Total Days"] = df_filtered["Total Days"].fillna(0).astype(int)
@@ -310,15 +306,14 @@ metrics_df = df_filtered.groupby("Division Name", as_index=False).agg({
     "Total Days": "sum",
     "Doctor Call Avg": "mean",
     "2PC Freq Cov %": "mean",
-    "Total DR Cov %": "mean",
-    "Non Field Work": "sum"
+    "Total DR Cov %": "mean"
 })
 
 # Round mean values for better readability
 metrics_df["Doctor Call Avg"] = metrics_df["Doctor Call Avg"].round(0)
 metrics_df["2PC Freq Cov %"] = metrics_df["2PC Freq Cov %"].round(0)
 metrics_df["Total DR Cov %"] = metrics_df["Total DR Cov %"].round(0)
-metrics_df["Non Field Work"] = metrics_df["Non Field Work"].round(0)
+##metrics_df["Non Field Work"] = metrics_df["Non Field Work"].round(0)
 
 
 # Create a bar chart for all KPI
@@ -327,7 +322,7 @@ metrics_df["Non Field Work"] = metrics_df["Non Field Work"].round(0)
 
 # Create a grouped bar chart with all KPIs including Non Field Work
 fig = px.bar(metrics_df, x="Division Name", 
-             y=["Leaves", "Field Work", "Non Field Work","Total Days", 
+             y=["Leaves", "Field Work","Total Days", 
                 ],
              title="**Comparison of Working Days Divisions**",
              barmode="group", height= 550)
