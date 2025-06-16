@@ -48,10 +48,12 @@ if not st.session_state.authenticated:
 # Load data
 ##file_path = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\New folder\KPI new- Jun 2025.xlsx"
 ##df = pd.read_excel(file_path)
-url = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20Jun%202025.csv"
-df = pd.read_csv(url)
 
-###df = pd.read_excel(url, engine='openpyxl')
+
+# Load data from CSV file hosted on GitHub
+path = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20Jun%202025.csv"
+df = pd.read_csv(path)
+
 
 from io import BytesIO
 
