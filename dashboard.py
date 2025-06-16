@@ -51,7 +51,7 @@ if not st.session_state.authenticated:
 
 
 # Load data from CSV file hosted on GitHub
-path = "https://raw.githubusercontent.com/NADARJX/KPI/main/KPI%20new-%20Jun%202025.csv"
+path = "https://raw.githubusercontent.com/NADARJX/KPI/refs/heads/main/KPI%20new-%20Jun%202025.csv"
 df = pd.read_csv(path)
 
 
