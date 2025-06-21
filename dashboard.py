@@ -15,6 +15,8 @@ import datetime
 warnings.filterwarnings("ignore")
 st.set_page_config(page_title="KPI Dashboard", page_icon="📊", layout="wide")
 
+
+
 # Simulated user authentication system with username, division & email
 user_roles = {
     "APCMAY": {"division": "Osvita", "email": "venkateshbabu.pr@abbott.com"},
@@ -46,14 +48,17 @@ if not st.session_state.authenticated:
         st.stop()  # Prevents further execution
 
 # Load data
-##file_path = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\New folder\KPI new- Jun 2025.xlsx"
-##df = pd.read_excel(file_path)
+file_path = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\APC KPI\KPI new- Jun 2025.xlsx"
+df = pd.read_excel(file_path)
+file_path1 = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\APC KPI\Chronic Missing Report APC - Mar to May.xlsx"
+file_path2= r"C:\Users\NADARJX\OneDrive - Abbott\Documents\APC KPI\Comex_Apc.xlsx"
+df1 = pd.read_excel(file_path1)
+df2 = pd.read_excel(file_path2)
 
+###url = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20May%202025.xlsx"
+###df = pd.read_excel(url)
 
-# Load data from CSV file hosted on GitHub
-path = "https://raw.githubusercontent.com/NADARJX/KPI/refs/heads/main/KPI%20new-%20Jun%202025.csv"
-df = pd.read_csv(path)
-
+###df = pd.read_excel(url, engine='openpyxl')
 
 from io import BytesIO
 
@@ -74,6 +79,9 @@ df_filtered = df[df["Division Name"] == st.session_state.user_division]
 # Sidebar Filters - Consolidated selection options
 st.sidebar.header("Choose your filters")
 
+
+st.markdown("""<style>[data-testid="stSidebar"] {background-color: #ADD8E6;  /* Light blue */}</style>""",unsafe_allow_html=True
+)
 
 
 # Abbott Designation filter
@@ -128,24 +136,56 @@ df["Last Submitted DCR Date"] = pd.to_datetime(df["Last Submitted DCR Date"])
 # Date input from user
 selected_date = st.date_input("Select a date", datetime.date.today())
 
+########
 
-# KPI CARD: Display number of users who submitted DCR for selected date
-num_dcr_users = df_filtered["Territory"].nunique() if selected_date else 0
-st.markdown(
-    f"""
-    <div style='border: 4px solid #003366; padding: 10px; width: 300px; margin: auto; text-align: center; background-color: #007BFF; border-radius: 8px;'>
-        <p style='font-size: 40px; font-weight: bold; color: white;'>{num_dcr_users}</p>
-        <h2 style='color: white; font-weight: bold; font-size: 18px;'>No of DCR Updated Users (Filtered by Date)</h2>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+# Get selected Division Name from user input with a "None" option
+division_options = ["None"] + list(df2["DIV_NAME"].dropna().unique())  # Add None as first option
+selected_division = st.sidebar.selectbox("Select Division Name", division_options, key="division_filter")
 
-# Display ABM KPI Score **only if an ABM is selected**
-if selected_abm:
-    st.subheader("📌 Individual ABM KPI Scores")
-    st.dataframe(df_filtered[["ABM", "Call Days", "Doctor Call Avg", "Plan DR Calls", "Actual DR Calls", "Total DR Cov %"]])
-    
+# Apply filtering only if a valid selection is made
+if selected_division != "None":
+    filtered_df2 = df2[df2["DIV_NAME"] == selected_division]
+else:
+    filtered_df2 = df2  # Keep full dataset if None is selected
+
+# Compute total EHIER_CD count based on filtered data
+total_ehier_cd = filtered_df2["EHIER_CD"].count()
+ 
+
+# Compute number of unique Territories who submitted DCR for selected date
+if selected_date:
+    num_dcr_users = df_filtered["Territory"].nunique()
+else:
+    num_dcr_users = 0  # Default to 0 if no date is selected
+
+# Create two columns for side-by-side KPI cards
+col1, col2 = st.columns(2)
+
+# KPI Card: Total EHIER_CD based on selected Division Name
+with col1:
+    st.markdown(
+        f"""
+        <div style='border: 4px solid #003366; padding: 5px; width: 200px; margin: auto; text-align: center; background-color: #FF5733; border-radius: 6px;'>
+            <p style='font-size: 30px; font-weight: bold; color: white;'>{total_ehier_cd}</p>
+            <h2 style='color: white; font-weight: bold; font-size: 14px;'>Total Users for {selected_division}</h2>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# KPI Card: Number of DCR Updated Users (Filtered by Date)
+with col2:
+    st.markdown(
+        f"""
+        <div style='border: 4px solid #003366; padding: 5px; width: 200px; margin: auto; text-align: center; background-color: #007BFF; border-radius: 6px;'>
+            <p style='font-size: 30px; font-weight: bold; color: white;'>{num_dcr_users}</p>
+            <h2 style='color: white; font-weight: bold; font-size: 14px;'>DCR Updated Users </h2>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
 
 
 
@@ -433,51 +473,200 @@ for index, row in division_data.iterrows():
         st.plotly_chart(fig1)
     with col8:
         st.plotly_chart(fig2)
-##############
-# Prepare data for visualization
-df_pie = df_filtered[["Division Name", "Total DR Total", "Total DR Visited", "Total DR MIssed"]].melt(id_vars=["Division Name"], 
-                                var_name="Category", value_name="Value")
+############### 
+col9, col10 =st.columns(2)
+# Get unique division names
+division_names = df_filtered["Division Name"].unique()
 
-# Create a donut pie chart
-fig = px.pie(df_pie, names="Category", values="Value", 
-             title="Doctor Visit Distribution",
-             hole=0.4, color="Category",
-             color_discrete_map={"Total DR Total": "blue", "Total DR Visited": "green", "Total DR MIssed": "red"})
+# Loop through each division and create a stacked bar chart
+for division in division_names:
+    # Filter data for the current division
+    df_division = df_filtered[df_filtered["Division Name"] == division]
 
-fig.update_traces(textinfo="label+value+percent", textfont=dict(size=14, color="yellow"))
+    # Group and melt the data
+    df_grouped = df_division.groupby("Division Name")[["Total DR Total", "Total DR Visited", "Total DR MIssed"]].sum().reset_index()
+    df_melted = df_grouped.melt(id_vars="Division Name", var_name="Category", value_name="Value")
 
-# Update layout for better readability
-fig.update_layout(
-    height= 600,  # Reduce height
-    width= 600,   # Reduce width
-    title=dict(
-        text="Doctor Visit Distribution",
-        font=dict(size=18, color="black", family="Arial", weight="bold")  # Slightly smaller bold title
-    ),
-    legend_title="Visit Status"
+    # Calculate percentage
+    df_melted["Percentage"] = df_melted["Value"] / df_melted["Value"].sum() * 100
+
+# Create bar chart without percentage
+fig = px.bar(df_melted, x="Division Name", y="Value", color="Category",title=f"Doctor Visit Distribution for {division}",text="Value")
+
+fig.update_traces(
+    texttemplate="<b>%{y:.0f}</b>",  # Bold labels without commas
+    textfont=dict(size=12, color="black",weight="bold"), width=0.3  # Adjust bar width
+)
+# Update layout to improve legend placement
+fig.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5))
+with col9:
+    st.plotly_chart(fig, use_container_width=True)
+####### 
+# Get unique division names
+division_names = df_filtered["Division Name"].unique()
+
+# Loop through each division and create a stacked bar chart
+for division in division_names:
+    # Filter data for the current division
+    df_division = df_filtered[df_filtered["Division Name"] == division]
+
+# Group by Division and Designation and calculate average coverage
+    df_sum = df_division.groupby(["Abbott Designation"], as_index=False)["Call Days"].sum()
+
+    
+# Create bar chart of average doctor coverage by designation within each division
+fig = px.bar(df_sum,
+             x="Abbott Designation",
+             y="Call Days",
+             color="Abbott Designation",
+          
+             title="Total Call Days by Designation within Division",
+             labels={"Call Days": "Total Call Days"},
+             template="plotly_white",
+             text=df_sum["Call Days"].round(0)
 )
 
-# Display in Streamlit
-st.plotly_chart(fig, use_container_width=True)
 
-# Plotly Visualization: Number of DCR Updates by Territory
-fig = px.bar(
-    df_filtered,
-    x="Territory",
-    y="Actual DR Calls",
-    color="Zone",
-    title=f"Actual Doctor Calls per Territory - {st.session_state.user_division}",
-    labels={"Actual DR Calls": "Doctor Calls", "Territory": "Territory Name"},
-    template="plotly_white"
+fig.update_traces(
+    texttemplate="<b>%{y:.0f}</b>",  # Bold labels without commas
+    textfont=dict(size=12, color="black",weight="bold"), width=0.3  # Adjust bar width
 )
+# Update layout to improve legend placement
+fig.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5))
+with col10:
+    st.plotly_chart(fig, use_container_width=True)
+#######    
+# Get unique division names
+division_names = df_filtered["Division Name"].unique()
 
+# Loop through each division and create a stacked bar chart
+for division in division_names:
+    # Filter data for the current division
+    df_division = df_filtered[df_filtered["Division Name"] == division]
 
-# Add data labels
-fig.update_traces(texttemplate='%{y}', textposition='outside')
+    # Create the stacked bar chart
+    fig = px.bar(
+        df_division,
+        x="Full Name",
+        y="Total DR Cov %",
+        color="Zone",  # Use Abbott Designation column if applicable
+        title=f"Total Doctor Coverage % for {division}",
+        labels={"Total DR Cov %": "Doctor Coverage %", "Full Name": "Employee Name"},
+        template="plotly_white",
+        barmode="stack"  # Enables stacked bar mode
+    )
 
-st.plotly_chart(fig, use_container_width=True)
+    # Add data labels
+    fig.update_traces(texttemplate='%{y:.2f}%', textposition='outside')
+
+    # Display the chart dynamically for each division
+    st.plotly_chart(fig, use_container_width=True)
 
 # **Download Option**
 st.subheader("Download Processed Data")
 csv = df_filtered.to_csv(index=False).encode('utf-8')
 st.download_button(label="📂 Download CSV", data=csv, file_name="processed_data.csv", mime="text/csv")
+
+###PAGE 2###########
+
+
+# Load Excel file
+
+df1 = pd.read_excel(file_path1, sheet_name="Base Data", engine="openpyxl")
+
+    # Apply RLS - Filter data based on authenticated user's division
+df_filtered1 = df1[df1["Divison Name"] == st.session_state.user_division]
+
+    # Sidebar Filters
+st.sidebar.header("Choose your filters (Missed Doctors)")
+
+    # Division Name filter
+division_options = df_filtered1["Divison Name"].dropna().unique()
+selected_division = st.sidebar.multiselect("Select Division", division_options)
+if selected_division:
+        df_filtered1= df_filtered1[df_filtered1["Divison Name"].isin(selected_division)]
+
+    # TBM Name filter
+tbm_options = df_filtered1["TBM Name"].dropna().unique()
+selected_tbm = st.sidebar.multiselect("Select TBM Name", tbm_options)
+if selected_tbm:
+        df_filtered1 = df_filtered1[df_filtered1["TBM Name"].isin(selected_tbm)]
+
+    # ABM Name filter
+abm_options = df_filtered1["ABM Name"].dropna().unique()
+selected_abm = st.sidebar.multiselect("Select ABM", abm_options)
+if selected_abm:
+        df_filtered1 = df_filtered1[df_filtered1["ABM Name"].isin(selected_abm)]
+
+    # ZBM Name filter
+zbm_options = df_filtered1["ZBM Name"].dropna().unique()
+selected_zbm = st.sidebar.multiselect("Select ZBM", zbm_options)
+if selected_zbm:
+        df_filtered1 = df_filtered1[df_filtered1["ZBM Name"].isin(selected_zbm)]
+
+    # Month filter
+month_options = df_filtered1["Month"].dropna().unique()
+selected_month = st.sidebar.multiselect("Select Month", month_options)
+if selected_month:
+        df_filtered1 = df_filtered1[df_filtered1["Month"].isin(selected_month)]
+
+    # Frequency filter
+freq_options = df_filtered1["To be Met"].dropna().unique()
+selected_freq = st.sidebar.multiselect("Select Frequency", freq_options)
+if selected_freq:
+        df_filtered1 = df_filtered1[df_filtered1["To be Met"].isin(selected_freq)]
+
+    # --- Chart 1: Unique Customer Count by Specialty ---
+
+st.markdown("## **Unique Doctors Missed in Division (Last 3 Months)**")
+specialty_counts = df_filtered1.groupby('Specialty By Practice')['Customer Code'].nunique().reset_index()
+specialty_counts = specialty_counts.sort_values(by='Customer Code', ascending=False)
+
+fig1 = px.bar(
+        specialty_counts,
+        x='Specialty By Practice',
+        y='Customer Code',
+        text='Customer Code',
+        labels={'Customer Code': 'Unique Customer Count'},
+        color_discrete_sequence=["#E6ADDE"]
+    )
+fig1.update_traces(
+        texttemplate="<b>%{y:.0f}</b>",
+        textfont=dict(size=16, color="black"),
+        width=0.8
+    )
+fig1.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5))
+st.plotly_chart(fig1, use_container_width=True)
+
+    # --- Chart 2: Total Frequency of Doctors ---
+st.markdown("### **Total Frequency of Doctors 1, 2, 3**")
+division_names = df_filtered1['Divison Name'].unique()
+selected_division_chart = st.selectbox("Select Division Name", division_names)
+
+filtered_data = df_filtered1[df_filtered1['Divison Name'] == selected_division_chart]
+frequency_data = (
+        filtered_data.groupby('Specialty By Practice')['To be Met']
+        .sum()
+        .reset_index()
+        .sort_values(by='To be Met', ascending=False)
+    )
+
+fig2 = px.bar(
+        frequency_data,
+        x='Specialty By Practice',
+        y='To be Met',
+        text='To be Met',
+        labels={'To be Met': 'Frequency', 'Specialty By Practice': 'Specialty'},
+        color_discrete_sequence=["#008004"])
+fig2.update_traces(
+        texttemplate="<b>%{y:.0f}</b>",
+        textfont=dict(size=16, color="black"),
+        width=0.8
+    )
+fig2.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5))
+st.plotly_chart(fig2, use_container_width=True)
+
+    # --- Summary Table ---
+st.subheader("Missing HCP Details Summary")
+summary_table = df1[['Customer Code', 'HCP Name', 'Specialty By Practice', 'To be Met']]
+st.dataframe(summary_table)
