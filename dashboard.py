@@ -5,7 +5,9 @@ import plotly.express as px  # Added Plotly for interactive charts
 import plotly.graph_objects as go
 
 import openpyxl
+from io import BytesIO
 
+import requests
 
 from datetime import date, timedelta
 
@@ -49,9 +51,9 @@ if not st.session_state.authenticated:
 
 # Load data
 file_path = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\APC KPI\KPI new- Jun 2025.xlsx"
-df = pd.read_excel(file_path)
 file_path1 = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\APC KPI\Chronic Missing Report APC - Mar to May.xlsx"
 file_path2= r"C:\Users\NADARJX\OneDrive - Abbott\Documents\APC KPI\Comex_Apc.xlsx"
+df = pd.read_excel(file_path)
 df1 = pd.read_excel(file_path1)
 df2 = pd.read_excel(file_path2)
 
@@ -60,14 +62,13 @@ df2 = pd.read_excel(file_path2)
 
 ###df = pd.read_excel(url, engine='openpyxl')
 
-from io import BytesIO
 
-import requests
+st.sidebar.title("📁 Dashboard Menu")
+page = st.sidebar.radio("Go to", ["📊 KPI Dashboard", "📉 Missed Doctors Report"])
 
 
 
 #################
-
 
 # Convert Last Submitted DCR Date to datetime format
 df["Last Submitted DCR Date"] = pd.to_datetime(df["Last Submitted DCR Date"], errors='coerce', dayfirst=True)
@@ -207,7 +208,10 @@ leaves_df = df_filtered.groupby("Division Name", as_index=False)["Leaves"].sum()
 
 ###########
 # **Bar Chart for Call Days with Average**
-st.subheader("Division-wise Call Days/Avg and Avg Call")
+page = st.sidebar.radio("Navigation to Page",["KPI Dashboard","Doctor Missed Report"])
+
+if page == "KPI Dashboard":
+    st.subheader("Division-wise Call Days/Avg and Avg Call")
 
 # Calculate the average Call Days
 category_avg_df = df_filtered.groupby("Division Name", as_index=False)["Call Days"].mean().round(0)
@@ -224,37 +228,35 @@ category_combined_df["Call Days_Avg"] = category_combined_df["Call Days_Avg"].ro
 col1, col2 = st.columns(2)
 
 # Create the grouped bar chart
-fig = px.bar(category_combined_df, x="Division Name", y=["Call Days_Total", "Call Days_Avg"], 
+fig1 = px.bar(category_combined_df, x="Division Name", y=["Call Days_Total", "Call Days_Avg"], 
              title="**Total vs Average Call Days by Division**",
              barmode="group", color_discrete_map={"Call Days_Total": "violet", "Call Days_Avg": "orange"},
              text_auto=True, height=500, width=800)  # Adjusted width for better visibility
 
 # Update traces for better visibility
-fig.update_traces(
+fig1.update_traces(
     texttemplate="<b>%{y:.0f}</b>",  # Bold labels without commas
     textfont=dict(size=16, color="black",weight="bold"), width=0.3  # Adjust bar width
 )
 # Update layout to improve legend placement
-fig.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5))
+fig1.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5))
 
 # Display the chart in col1
-with col1:
-    st.plotly_chart(fig, use_container_width=True)
+
 
 
 
 # **Bar Chart for Doctor Call Avg**
 
-fig = px.bar(doctor_avg_df, x="Division Name", y="Doctor Call Avg", title="Doctor Call Avg by Division",
+fig2 = px.bar(doctor_avg_df, x="Division Name", y="Doctor Call Avg", title="Doctor Call Avg by Division",
              color_discrete_sequence=["green"], text=doctor_avg_df["Doctor Call Avg"].map("{:.2f}".format),height= 470,width=100)
-fig.update_traces(
+fig2.update_traces(
     texttemplate="<b>%{y:.0f}</b>",  # Bold labels without commas
     textfont=dict(size=16, color="black",weight="bold"),width= 0.3)  # Bigger font for readability
 
-fig.update_layout(legend=dict(orientation="h",yanchor="top",y=-0.2,xanchor="center",x=0.5)
+fig2.update_layout(legend=dict(orientation="h",yanchor="top",y=-0.2,xanchor="center",x=0.5)
 )
-with col2:
-     st.plotly_chart(fig, use_container_width=True)
+
      
 # Create a Streamlit column layout
 col3, col4 = st.columns(2)     
@@ -265,21 +267,20 @@ col3, col4 = st.columns(2)
 plan_actual_df["Plan DR Calls"] = plan_actual_df["Plan DR Calls"].astype(int)
 plan_actual_df["Actual DR Calls"] = plan_actual_df["Actual DR Calls"].astype(int)
 
-fig = px.bar(plan_actual_df, x="Division Name", y=["Plan DR Calls", "Actual DR Calls"], 
+fig3 = px.bar(plan_actual_df, x="Division Name", y=["Plan DR Calls", "Actual DR Calls"], 
              title="Plan vs Actual DR Calls", barmode="stack",
              color_discrete_map={"Plan DR Calls": "orange", "Actual DR Calls": "green"}, height=550,
              width= 20,text_auto=True)  # Automatically adds data labels
 
 # Update traces to position text inside the bars
-fig.update_traces(
+fig3.update_traces(
     texttemplate="<b>%{y:.0f}</b>",  # Bold labels without commas
     textfont=dict(size=16, color="black",weight="bold"),width= 0.3  # Bigger font for readability
 )
-fig.update_layout(legend=dict(orientation="h",yanchor="top",y=-0.2,xanchor="center",x=0.5)
+fig3.update_layout(legend=dict(orientation="h",yanchor="top",y=-0.2,xanchor="center",x=0.5)
 )
 
-with col3:
-   st.plotly_chart(fig, use_container_width=True)
+
 
 
 # Fill NaN values with 0 and convert to integers
@@ -290,37 +291,35 @@ df_filtered["2PC Freq Met"] = df_filtered["2PC Freq Met"].fillna(0).astype(int)
 
 # **2PC Freq Cov %**
 
-fig = px.bar(pc_freq_df, x="Division Name", y="2PC Freq Cov %", title="2PC Freq Cov % by Division",
+fig4 = px.bar(pc_freq_df, x="Division Name", y="2PC Freq Cov %", title="2PC Freq Cov % by Division",
              color="2PC Freq Cov %", text="2PC Freq Cov %", height= 520 )
-fig.update_traces(
+fig4.update_traces(
     texttemplate="<b>%{y:.0f}</b>",  # Bold labels without commas
     textfont=dict(size=16, color="black",weight="bold"),width= 0.5  # Bigger font for readability
 )
-fig.update_layout(legend=dict(orientation="h",yanchor="top",y=-0.2,xanchor="center",x=0.5)
+fig4.update_layout(legend=dict(orientation="h",yanchor="top",y=-0.2,xanchor="center",x=0.5)
 )
 
-with col4:
-     st.plotly_chart(fig, use_container_width=True)
+
      
 col5, col6 = st.columns(2)    
 
 # **Total DR Coverage %**
 
-fig = px.bar(total_dr_cov_df, x="Division Name", y="Total DR Cov %",
+fig5 = px.bar(total_dr_cov_df, x="Division Name", y="Total DR Cov %",
              title="Total DR Coverage % by Division", color="Total DR Cov %", text="Total DR Cov %", height=500)
-fig.update_traces(
+fig5.update_traces(
     texttemplate="<b>%{y:.0f}</b>",  # Bold labels without commas
     textfont=dict(size=16, color="black",weight="bold"),width= 0.3  # Bigger font for readability
 )
 
 
-fig.update_layout(legend=dict(orientation="v",yanchor="top",y=0.2,xanchor="center",x=0.2)
+fig5.update_layout(legend=dict(orientation="v",yanchor="top",y=0.2,xanchor="center",x=0.2)
 )
 
-fig.update_layout(margin=dict(l=20, r=20, t=40, b=40))
+fig5.update_layout(margin=dict(l=20, r=20, t=40, b=40))
 
-with col5:
-    st.plotly_chart(fig, use_container_width=True)
+
 
 
 # Fill NaN values with 0 and round percentages
@@ -363,22 +362,21 @@ metrics_df["Total DR Cov %"] = metrics_df["Total DR Cov %"].round(0)
 
 
 # Create a grouped bar chart with all KPIs including Non Field Work
-fig = px.bar(metrics_df, x="Division Name", 
+fig6 = px.bar(metrics_df, x="Division Name", 
              y=["Leaves", "Field Work","Total Days", 
                 ],
              title="**Comparison of Working Days Divisions**",
              barmode="group", height= 550)
 
 # Show data labels without commas
-fig.update_traces(
+fig6.update_traces(
     texttemplate="<b>%{y:.0f}</b>",  # Bold labels without commas
     textfont=dict(size=18, color="black",weight="bold"),width= 0.2  # Bigger font for readability
 )
-fig.update_layout(legend=dict(orientation="h",yanchor="top",y=-0.2,xanchor="center",x=0.5)
+fig6.update_layout(legend=dict(orientation="h",yanchor="top",y=-0.2,xanchor="center",x=0.5)
 )
 # Display chart
-with col6:
-    st.plotly_chart(fig, use_container_width=True)
+
 
 
 
@@ -402,12 +400,12 @@ summary_table = df_filtered.groupby("Zone", as_index=False).agg({
 })
 
 # Create a line chart
-fig = px.line(summary_table, x="Zone", y=["Plan DR Calls", "Actual DR Calls"],
+fig7 = px.line(summary_table, x="Zone", y=["Plan DR Calls", "Actual DR Calls"],
               title="Call and Doctor Visit Trends by Zone",
               markers=True)
 
 # Update layout for better visibility
-fig.update_layout(
+fig7.update_layout(
     title=dict(
         text="Calls Trends by Zone",
         font=dict(size=18, color="black", family="Arial", weight="bold")  # Bold title
@@ -418,7 +416,7 @@ fig.update_layout(
 )
 
 # Display in Streamlit
-st.plotly_chart(fig, use_container_width=True)
+
 
 
 st.markdown(
@@ -449,7 +447,7 @@ for index, row in division_data.iterrows():
     avg_2pc = row["2PC Freq Cov %"]
 
     # Gauge Chart for 1PC Coverage %
-    fig1 = go.Figure(go.Indicator(
+    fig8= go.Figure(go.Indicator(
         mode="gauge+number",
         value=avg_1pc,
         title={"text": f"{division_name} - 1PC Coverage %"},
@@ -457,7 +455,7 @@ for index, row in division_data.iterrows():
     ))
 
     # Gauge Chart for 2PC Coverage %
-    fig2 = go.Figure(go.Indicator(
+    fig9 = go.Figure(go.Indicator(
         mode="gauge+number",
         value=avg_2pc,
         title={"text": f"{division_name} - 2PC Coverage %"},
@@ -468,13 +466,13 @@ for index, row in division_data.iterrows():
 
     # Display both charts side by side in Streamlit
     st.subheader(f"📊 Coverage Metrics for {', '.join(selected_territory)}")
-    col7, col8 = st.columns(2)
-    with col7:
-        st.plotly_chart(fig1)
+    col8, col9 = st.columns(2)
     with col8:
+        st.plotly_chart(fig1)
+    with col9:
         st.plotly_chart(fig2)
 ############### 
-col9, col10 =st.columns(2)
+col10, col11 =st.columns(2)
 # Get unique division names
 division_names = df_filtered["Division Name"].unique()
 
@@ -491,16 +489,15 @@ for division in division_names:
     df_melted["Percentage"] = df_melted["Value"] / df_melted["Value"].sum() * 100
 
 # Create bar chart without percentage
-fig = px.bar(df_melted, x="Division Name", y="Value", color="Category",title=f"Doctor Visit Distribution for {division}",text="Value")
+fig10 = px.bar(df_melted, x="Division Name", y="Value", color="Category",title=f"Doctor Visit Distribution for {division}",text="Value")
 
-fig.update_traces(
+fig10.update_traces(
     texttemplate="<b>%{y:.0f}</b>",  # Bold labels without commas
     textfont=dict(size=12, color="black",weight="bold"), width=0.3  # Adjust bar width
 )
 # Update layout to improve legend placement
-fig.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5))
-with col9:
-    st.plotly_chart(fig, use_container_width=True)
+fig10.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5))
+
 ####### 
 # Get unique division names
 division_names = df_filtered["Division Name"].unique()
@@ -515,7 +512,7 @@ for division in division_names:
 
     
 # Create bar chart of average doctor coverage by designation within each division
-fig = px.bar(df_sum,
+fig11 = px.bar(df_sum,
              x="Abbott Designation",
              y="Call Days",
              color="Abbott Designation",
@@ -527,14 +524,13 @@ fig = px.bar(df_sum,
 )
 
 
-fig.update_traces(
+fig11.update_traces(
     texttemplate="<b>%{y:.0f}</b>",  # Bold labels without commas
     textfont=dict(size=12, color="black",weight="bold"), width=0.3  # Adjust bar width
 )
 # Update layout to improve legend placement
-fig.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5))
-with col10:
-    st.plotly_chart(fig, use_container_width=True)
+fig11.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5))
+
 #######    
 # Get unique division names
 division_names = df_filtered["Division Name"].unique()
@@ -545,7 +541,7 @@ for division in division_names:
     df_division = df_filtered[df_filtered["Division Name"] == division]
 
     # Create the stacked bar chart
-    fig = px.bar(
+    fig12 = px.bar(
         df_division,
         x="Full Name",
         y="Total DR Cov %",
@@ -557,21 +553,63 @@ for division in division_names:
     )
 
     # Add data labels
-    fig.update_traces(texttemplate='%{y:.2f}%', textposition='outside')
+    fig12.update_traces(texttemplate='%{y:.2f}%', textposition='outside')
 
-    # Display the chart dynamically for each division
-    st.plotly_chart(fig, use_container_width=True)
+ 
 
 # **Download Option**
 st.subheader("Download Processed Data")
 csv = df_filtered.to_csv(index=False).encode('utf-8')
 st.download_button(label="📂 Download CSV", data=csv, file_name="processed_data.csv", mime="text/csv")
 
-###PAGE 2###########
+###PAGEs###########
 
+st.sidebar.title("📁 Dashboard Menu")
+page = st.sidebar.radio("Go to", ["📊 KPI Dashboard", "📉 Missed Doctors Report"])
+
+# Common division filtering
+division = st.session_state.user_division
+if page == "📊 KPI Dashboard":
+    st.subheader("1. Average Call Days by Division")
+    with col1:
+        st.plotly_chart(fig1, use_container_width=True)
+    st.subheader("2. Doctor Call Avg by Division")
+    with col2:
+        st.plotly_chart(fig2, use_container_width=True)
+    st.subheader("2. Planned V/S Actual calls by Division")
+    with col3:
+        st.plotly_chart(fig3, use_container_width=True)   
+    st.subheader("2. 2 Frequency Coverage % by Division")
+    with col4:
+        st.plotly_chart(fig4, use_container_width=True)   
+    st.subheader("Total Days Metrics for Division")
+    with col5:
+        st.plotly_chart(fig5, use_container_width=True)
+    st.subheader("Zone wise calls Trends")
+    with col6:
+        st.plotly_chart(fig6, use_container_width=True)
+    st.subheader("1 PC Coverage % ")
+    st.plotly_chart(fig7, use_container_width=True)
+    st.subheader("2 PC Coverage %")
+    with col8:
+        st.plotly_chart(fig8, use_container_width=True)
+    st.subheader("Missed Doctors")
+    with col9:
+        st.plotly_chart(fig9, use_container_width=True)
+    st.subheader("ZBM, ABM, TBM Calls Days")
+    with col10:
+        st.plotly_chart(fig10, use_container_width=True) 
+    st.subheader("TBM levels call days completed")
+    with col11:
+        st.plotly_chart(fig11, use_container_width=True)                       
+         
+# --- Page 2: Missed Doctors Report ---
+elif page == "📉 Missed Doctors Report":
+    st.title("📉 Missed Doctors - Last 3 Months")
+    
 
 # Load Excel file
-
+    
 df1 = pd.read_excel(file_path1, sheet_name="Base Data", engine="openpyxl")
 
     # Apply RLS - Filter data based on authenticated user's division
@@ -622,7 +660,9 @@ st.markdown("## **Unique Doctors Missed in Division (Last 3 Months)**")
 specialty_counts = df_filtered1.groupby('Specialty By Practice')['Customer Code'].nunique().reset_index()
 specialty_counts = specialty_counts.sort_values(by='Customer Code', ascending=False)
 
-fig1 = px.bar(
+
+    
+fig13 = px.bar(
         specialty_counts,
         x='Specialty By Practice',
         y='Customer Code',
@@ -630,13 +670,13 @@ fig1 = px.bar(
         labels={'Customer Code': 'Unique Customer Count'},
         color_discrete_sequence=["#E6ADDE"]
     )
-fig1.update_traces(
+fig13.update_traces(
         texttemplate="<b>%{y:.0f}</b>",
         textfont=dict(size=16, color="black"),
         width=0.8
     )
-fig1.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5))
-st.plotly_chart(fig1, use_container_width=True)
+fig13.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5))
+st.plotly_chart(fig13, use_container_width=True)
 
     # --- Chart 2: Total Frequency of Doctors ---
 st.markdown("### **Total Frequency of Doctors 1, 2, 3**")
@@ -651,20 +691,20 @@ frequency_data = (
         .sort_values(by='To be Met', ascending=False)
     )
 
-fig2 = px.bar(
+fig14 = px.bar(
         frequency_data,
         x='Specialty By Practice',
         y='To be Met',
         text='To be Met',
         labels={'To be Met': 'Frequency', 'Specialty By Practice': 'Specialty'},
         color_discrete_sequence=["#008004"])
-fig2.update_traces(
+fig14.update_traces(
         texttemplate="<b>%{y:.0f}</b>",
         textfont=dict(size=16, color="black"),
         width=0.8
     )
-fig2.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5))
-st.plotly_chart(fig2, use_container_width=True)
+fig14.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5))
+st.plotly_chart(fig14, use_container_width=True)
 
     # --- Summary Table ---
 st.subheader("Missing HCP Details Summary")
