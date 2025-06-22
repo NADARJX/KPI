@@ -51,13 +51,13 @@ if not st.session_state.authenticated:
 
 # Load data
 
-file_path = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\APC KPI\KPI new- Jun 2025.xlsx"
-file_path1 = file_path1 = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\APC KPI\Chronic Missing Report APC - Mar to May.xlsx"
-file_path2= r"C:\Users\NADARJX\OneDrive - Abbott\Documents\APC KPI\Comex_Apc.xlsx"
+file_path = "https://raw.githubusercontent.com/NADARJX/KPI/refs/heads/main/KPI%20new-%20Jun%202025.csv"
+file_path1 = "https://github.com/NADARJX/KPI/blob/main/Chronic%20Missing%20Report%20ASC%20-%20Apr%20to%20Jun.xlsx"
+file_path2= "https://github.com/NADARJX/KPI/blob/main/Comex_Asc.xlsx"
 
 @st.cache_data
 def load_data():
-    df = pd.read_excel(file_path)
+    df = pd.read_csv(file_path)
     return df
 
 @st.cache_data
@@ -70,7 +70,7 @@ def load_data2():
     df2 = pd.read_excel(file_path2)
     return df2
      
-df = pd.read_excel(file_path)
+df = pd.read_csv(file_path)
 df1 = pd.read_excel(file_path1)
 df2 = pd.read_excel(file_path2)
 
