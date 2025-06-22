@@ -56,15 +56,29 @@ file_path2= r"C:\Users\NADARJX\OneDrive - Abbott\Documents\APC KPI\Comex_Apc.xls
 df = pd.read_excel(file_path)
 df1 = pd.read_excel(file_path1)
 df2 = pd.read_excel(file_path2)
+@st.cache_data
+def load_data():
+    df= pd.read_excel("file_path2.xlsx")
+    return df
+def load_data1():
+    df1=pd.read_excel("file_path1")
+    return df1
+def load_data2():
+    df2=pd.read_excel("file_path2")
+    return df2
 
 ###url = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20May%202025.xlsx"
 ###df = pd.read_excel(url)
 
 ###df = pd.read_excel(url, engine='openpyxl')
 
-
 st.sidebar.title("📁 Dashboard Menu")
-page = st.sidebar.radio("Go to", ["📊 KPI Dashboard", "📉 Missed Doctors Report"])
+page = st.sidebar.radio(
+    "Go to",
+    ["📊 KPI Dashboard", "📉 Missed Doctors Report"],
+    key="sidebar_nav"
+)
+
 
 
 
@@ -78,13 +92,14 @@ df = df.dropna(subset=["Last Submitted DCR Date"])
 df_filtered = df[df["Division Name"] == st.session_state.user_division]
 
 # Sidebar Filters - Consolidated selection options
-st.sidebar.header("Choose your filters")
+
 
 
 st.markdown("""<style>[data-testid="stSidebar"] {background-color: #ADD8E6;  /* Light blue */}</style>""",unsafe_allow_html=True
 )
+# Sidebar Filters - Consolidated selection options
 
-
+st.sidebar.header("Choose your filters")
 # Abbott Designation filter
 selected_designation = st.sidebar.selectbox("Select Abbott Designation", ["All"] + list(df_filtered["Abbott Designation"].dropna().unique()))
 if selected_designation != "All":
@@ -207,11 +222,6 @@ leaves_df = df_filtered.groupby("Division Name", as_index=False)["Leaves"].sum()
 
 
 ###########
-# **Bar Chart for Call Days with Average**
-page = st.sidebar.radio("Navigation to Page",["KPI Dashboard","Doctor Missed Report"])
-
-if page == "KPI Dashboard":
-    st.subheader("Division-wise Call Days/Avg and Avg Call")
 
 # Calculate the average Call Days
 category_avg_df = df_filtered.groupby("Division Name", as_index=False)["Call Days"].mean().round(0)
@@ -228,9 +238,9 @@ category_combined_df["Call Days_Avg"] = category_combined_df["Call Days_Avg"].ro
 col1, col2 = st.columns(2)
 
 # Create the grouped bar chart
-fig1 = px.bar(category_combined_df, x="Division Name", y=["Call Days_Total", "Call Days_Avg"], 
-             title="**Total vs Average Call Days by Division**",
-             barmode="group", color_discrete_map={"Call Days_Total": "violet", "Call Days_Avg": "orange"},
+fig1 = px.bar(category_combined_df, x="Division Name", y=["Call Days_Avg"], 
+             title="**Average Call Days by Division**",
+             barmode="group", color_discrete_map={"Call Days_Avg": "orange"},
              text_auto=True, height=500, width=800)  # Adjusted width for better visibility
 
 # Update traces for better visibility
@@ -401,7 +411,7 @@ summary_table = df_filtered.groupby("Zone", as_index=False).agg({
 
 # Create a line chart
 fig7 = px.line(summary_table, x="Zone", y=["Plan DR Calls", "Actual DR Calls"],
-              title="Call and Doctor Visit Trends by Zone",
+              title="**Call and Doctor Visit Trends by Zone**",
               markers=True)
 
 # Update layout for better visibility
@@ -417,7 +427,7 @@ fig7.update_layout(
 
 # Display in Streamlit
 
-
+col8, col9 = st.columns(2)
 
 st.markdown(
     """
@@ -464,13 +474,7 @@ for index, row in division_data.iterrows():
 
   
 
-    # Display both charts side by side in Streamlit
-    st.subheader(f"📊 Coverage Metrics for {', '.join(selected_territory)}")
-    col8, col9 = st.columns(2)
-    with col8:
-        st.plotly_chart(fig1)
-    with col9:
-        st.plotly_chart(fig2)
+
 ############### 
 col10, col11 =st.columns(2)
 # Get unique division names
@@ -557,56 +561,15 @@ for division in division_names:
 
  
 
-# **Download Option**
-st.subheader("Download Processed Data")
-csv = df_filtered.to_csv(index=False).encode('utf-8')
-st.download_button(label="📂 Download CSV", data=csv, file_name="processed_data.csv", mime="text/csv")
 
 ###PAGEs###########
 
-st.sidebar.title("📁 Dashboard Menu")
-page = st.sidebar.radio("Go to", ["📊 KPI Dashboard", "📉 Missed Doctors Report"])
+
+
 
 # Common division filtering
-division = st.session_state.user_division
-if page == "📊 KPI Dashboard":
-    st.subheader("1. Average Call Days by Division")
-    with col1:
-        st.plotly_chart(fig1, use_container_width=True)
-    st.subheader("2. Doctor Call Avg by Division")
-    with col2:
-        st.plotly_chart(fig2, use_container_width=True)
-    st.subheader("2. Planned V/S Actual calls by Division")
-    with col3:
-        st.plotly_chart(fig3, use_container_width=True)   
-    st.subheader("2. 2 Frequency Coverage % by Division")
-    with col4:
-        st.plotly_chart(fig4, use_container_width=True)   
-    st.subheader("Total Days Metrics for Division")
-    with col5:
-        st.plotly_chart(fig5, use_container_width=True)
-    st.subheader("Zone wise calls Trends")
-    with col6:
-        st.plotly_chart(fig6, use_container_width=True)
-    st.subheader("1 PC Coverage % ")
-    st.plotly_chart(fig7, use_container_width=True)
-    st.subheader("2 PC Coverage %")
-    with col8:
-        st.plotly_chart(fig8, use_container_width=True)
-    st.subheader("Missed Doctors")
-    with col9:
-        st.plotly_chart(fig9, use_container_width=True)
-    st.subheader("ZBM, ABM, TBM Calls Days")
-    with col10:
-        st.plotly_chart(fig10, use_container_width=True) 
-    st.subheader("TBM levels call days completed")
-    with col11:
-        st.plotly_chart(fig11, use_container_width=True)                       
-         
-# --- Page 2: Missed Doctors Report ---
-elif page == "📉 Missed Doctors Report":
-    st.title("📉 Missed Doctors - Last 3 Months")
-    
+### division = st.session_state.user_division
+
 
 # Load Excel file
     
@@ -616,6 +579,7 @@ df1 = pd.read_excel(file_path1, sheet_name="Base Data", engine="openpyxl")
 df_filtered1 = df1[df1["Divison Name"] == st.session_state.user_division]
 
     # Sidebar Filters
+ 
 st.sidebar.header("Choose your filters (Missed Doctors)")
 
     # Division Name filter
@@ -656,7 +620,7 @@ if selected_freq:
 
     # --- Chart 1: Unique Customer Count by Specialty ---
 
-st.markdown("## **Unique Doctors Missed in Division (Last 3 Months)**")
+##st.markdown("## **Unique Doctors Missed in Division (Last 3 Months)**")
 specialty_counts = df_filtered1.groupby('Specialty By Practice')['Customer Code'].nunique().reset_index()
 specialty_counts = specialty_counts.sort_values(by='Customer Code', ascending=False)
 
@@ -676,10 +640,10 @@ fig13.update_traces(
         width=0.8
     )
 fig13.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5))
-st.plotly_chart(fig13, use_container_width=True)
+
 
     # --- Chart 2: Total Frequency of Doctors ---
-st.markdown("### **Total Frequency of Doctors 1, 2, 3**")
+###st.markdown("### **Total Frequency of Doctors 1, 2, 3**")
 division_names = df_filtered1['Divison Name'].unique()
 selected_division_chart = st.selectbox("Select Division Name", division_names)
 
@@ -704,9 +668,58 @@ fig14.update_traces(
         width=0.8
     )
 fig14.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5))
-st.plotly_chart(fig14, use_container_width=True)
+
 
     # --- Summary Table ---
-st.subheader("Missing HCP Details Summary")
+##st.subheader("Missing HCP Details Summary")
 summary_table = df1[['Customer Code', 'HCP Name', 'Specialty By Practice', 'To be Met']]
-st.dataframe(summary_table)
+
+if page == "📊 KPI Dashboard":
+    st.subheader("********")
+   
+    with col1:
+        st.plotly_chart(fig1, use_container_width=True)
+ 
+    with col2:
+        st.plotly_chart(fig2, use_container_width=True)
+   
+    with col3:
+        st.plotly_chart(fig3, use_container_width=True)   
+
+    with col4:
+        st.plotly_chart(fig4, use_container_width=True)   
+  
+    with col5:
+        st.plotly_chart(fig5, use_container_width=True)
+ 
+    with col6:
+        st.plotly_chart(fig6, use_container_width=True)
+   
+    st.plotly_chart(fig7, use_container_width=True)
+   
+    with col8:
+        st.plotly_chart(fig8, use_container_width=True)
+
+    with col9:
+        st.plotly_chart(fig9, use_container_width=True)
+  
+    with col10:
+        st.plotly_chart(fig10, use_container_width=True) 
+    
+    with col11:
+        st.plotly_chart(fig11, use_container_width=True)                       
+         
+# --- Page 2: Missed Doctors Report ---
+elif page == "📉 Missed Doctors Report":
+    st.title("📉 Missed Doctors - Last 3 Months")
+    st.plotly_chart(fig13, use_container_width=True)
+    st.plotly_chart(fig14, use_container_width=True)
+    st.dataframe(summary_table)
+    
+       
+        
+# **Download Option**
+st.subheader("Download Processed Data")
+csv = df_filtered.to_csv(index=False).encode('utf-8')
+st.download_button(label="📂 Download CSV", data=csv, file_name="processed_data.csv", mime="text/csv")
+    
