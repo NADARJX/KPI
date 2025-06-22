@@ -50,22 +50,29 @@ if not st.session_state.authenticated:
         st.stop()  # Prevents further execution
 
 # Load data
+
 file_path = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\APC KPI\KPI new- Jun 2025.xlsx"
-file_path1 = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\APC KPI\Chronic Missing Report APC - Mar to May.xlsx"
+file_path1 = file_path1 = r"C:\Users\NADARJX\OneDrive - Abbott\Documents\APC KPI\Chronic Missing Report APC - Mar to May.xlsx"
 file_path2= r"C:\Users\NADARJX\OneDrive - Abbott\Documents\APC KPI\Comex_Apc.xlsx"
+
+@st.cache_data
+def load_data():
+    df = pd.read_excel(file_path)
+    return df
+
+@st.cache_data
+def load_data1():
+    df1 = pd.read_excel(file_path1)
+    return df1
+
+@st.cache_data
+def load_data2():
+    df2 = pd.read_excel(file_path2)
+    return df2
+     
 df = pd.read_excel(file_path)
 df1 = pd.read_excel(file_path1)
 df2 = pd.read_excel(file_path2)
-@st.cache_data
-def load_data():
-    df= pd.read_excel("file_path2.xlsx")
-    return df
-def load_data1():
-    df1=pd.read_excel("file_path1")
-    return df1
-def load_data2():
-    df2=pd.read_excel("file_path2")
-    return df2
 
 ###url = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20May%202025.xlsx"
 ###df = pd.read_excel(url)
@@ -98,6 +105,7 @@ df_filtered = df[df["Division Name"] == st.session_state.user_division]
 st.markdown("""<style>[data-testid="stSidebar"] {background-color: #ADD8E6;  /* Light blue */}</style>""",unsafe_allow_html=True
 )
 # Sidebar Filters - Consolidated selection options
+
 
 st.sidebar.header("Choose your filters")
 # Abbott Designation filter
@@ -163,6 +171,10 @@ if selected_division != "None":
     filtered_df2 = df2[df2["DIV_NAME"] == selected_division]
 else:
     filtered_df2 = df2  # Keep full dataset if None is selected
+    
+####
+
+    
 
 # Compute total EHIER_CD count based on filtered data
 total_ehier_cd = filtered_df2["EHIER_CD"].count()
