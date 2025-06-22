@@ -51,28 +51,28 @@ if not st.session_state.authenticated:
 
 # Load data
 
+import pandas as pd
+import streamlit as st
+
 file_path = "https://raw.githubusercontent.com/NADARJX/KPI/refs/heads/main/KPI%20new-%20Jun%202025.csv"
-file_path1 = "https://github.com/NADARJX/KPI/blob/main/Chronic%20Missing%20Report%20ASC%20-%20Apr%20to%20Jun.xlsx"
-file_path2= "https://github.com/NADARJX/KPI/blob/main/Comex_Asc.xlsx"
+file_path1 = "https://github.com/NADARJX/KPI/raw/main/Chronic%20Missing%20Report%20ASC%20-%20Apr%20to%20Jun.xlsx"
+file_path2 = "https://github.com/NADARJX/KPI/raw/main/Comex_Asc.xlsx"
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv(file_path)
-    return df
+    return pd.read_csv(file_path)
 
 @st.cache_data
 def load_data1():
-    df1 = pd.read_excel(file_path1)
-    return df1
+    return pd.read_excel(file_path1)
 
 @st.cache_data
 def load_data2():
-    df2 = pd.read_excel(file_path2)
-    return df2
-     
-df = pd.read_csv(file_path)
-df1 = pd.read_excel(file_path1)
-df2 = pd.read_excel(file_path2)
+    return pd.read_excel(file_path2)
+
+df = load_data()
+df1 = load_data1()
+df2 = load_data2()
 
 ###url = "https://github.com/NADARJX/KPI/blob/main/KPI%20new-%20May%202025.xlsx"
 ###df = pd.read_excel(url)
